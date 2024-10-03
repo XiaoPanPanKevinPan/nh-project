@@ -12,13 +12,13 @@ if [ ! -e ~/nh ]; then
 fi
 
 echo "nh2.sh started at $(date +%Y%m%d-%H%M%S.%N)" > testlog
+./nh2.sh $IDS --parallel=120 --folder-path ~/nh_new
 for i in $IDS; do 
-	./nh2.sh "$i"
-	rm ~/nh/"$i"/cover_page.html
+	rm ~/nh_new/"$i"/cover_page.html
 done
 echo "nh2.sh ended at $(date +%Y%m%d-%H%M%S.%N)" >> testlog
 
-mv ~/nh ~/nh_new
+# mv ~/nh ~/nh_new
 mkdir ~/nh
 
 echo "nh2_old.sh started at $(date +%Y%m%d-%H%M%S.%N)" >> testlog
