@@ -71,6 +71,7 @@ parse_args() {
 		echo "  - A regex matches options with values (e.g. '^--(output|etc)|-[oe]$')"
 		echo "  - A regex matches options w/o values (e.g. '^--(help|version)|-[hv]$')"
 		echo "  - A regex matches options with optional value (e.g. '^--(retry|parallel)|-[rp]$')"
+		echo "    - note the '^' and '$' at the two ends of the regex"
 		echo "  - A callback command, which takes 4 parameter: "
 		echo "    - status (NO_VAL, WITH_VAL, UNEXPT_VAL, UNEXPT_NO_VAL, UNKNOWN_OPT, NON_OPT, OPT_VAL_NO_EQ)"
 		echo '    - option name: you must implement for names `''PARSE_ARGS_NON_OPTION`'
@@ -228,7 +229,7 @@ argument_callback() {
 				"Option '$FLAG', value '$VALUE', ERR_ARG '$ERR_ARG'";;
 	esac
 }
-parse_args '^--(max-retry|media-server-list|folder-path)|-[rmf]$' '^--(help|version)|-[hv]$' '--(parallel)|-[p]' argument_callback "$@"
+parse_args '^--(max-retry|media-server-list|folder-path)|-[rmf]$' '^--(help|version)|-[hv]$' '^--(parallel)|-[p]$' argument_callback "$@"
 
 # if there is no given book id, shows error
 if [ -z "${ID_LIST[*]}" ]; then 
