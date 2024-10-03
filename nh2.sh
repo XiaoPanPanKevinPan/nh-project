@@ -39,10 +39,14 @@ throw() {
 		errcho "$1"
 		shift 
 	done 
-	errcho
-	errcho "--------------------------------------------------------------------------------"
-	print_help 1>&2;
-	exit 1;
+	finish 1;
+}
+
+throwhelp() {
+	throw "$@" \
+		"" \
+		"--------------------------------------------------------------------------------" \
+		"$(print_help)"
 }
 
 # a job management system to ensure the script only exit 
@@ -63,6 +67,23 @@ wait_for_jobs() {
 		update_jobs;
 	done;
 }
+finish() { 
+	declare EXIT_CODE
+	EXIT_CODE="${1:-0}"
+	update_jobs;
+
+	# wait for jobs, if there is any undone
+	if [ -n "${JOBS[*]}" ]; then
+		echo "Waiting for jobs to finish..."
+		wait_for_jobs; 
+		# after the waiting, error message may have been flushed away. 
+		# notify the user to check them
+		if [ "$EXIT_CODE" -ne "0" ]; then 
+			echo "Something went wrong with the script (exit $EXIT_CODE). Check the error above."
+		fi
+	fi
+	exit "$1"; 
+}
 
 # a tool for parsing the arguments 
 parse_args() {
@@ -78,7 +99,7 @@ parse_args() {
 		echo '    - option value: (if given)'
 		echo '    - full error argument'
 		echo '  - Pass all the arugments to parse with "$@"'
-		exit 1
+		finish 1
 	fi
 
 	declare OPTS_WITH_VALUE="$1"
@@ -179,33 +200,33 @@ argument_callback() {
 	declare ERR_ARG="$4"
 	case "$1" in 
 		UNEXPT_VAL)
-			throw "Option '$FLAG' doesn't require a value '$VALUE'. Error at '$ERR_ARG'.";;
+			throwhelp "Option '$FLAG' doesn't require a value '$VALUE'. Error at '$ERR_ARG'.";;
 		UNEXPT_NO_VAL)
-			throw "Option '$FLAG' requires a value. Error at '$ERR_ARG'.";;
+			throwhelp "Option '$FLAG' requires a value. Error at '$ERR_ARG'.";;
 		UNKNOWN_OPT)
-			throw "Option '$FLAG' is unknown. Error at '$ERR_ARG'." \
+			throwhelp "Option '$FLAG' is unknown. Error at '$ERR_ARG'." \
 				"Hint: if this is a optional value of the previous option (such a '-p')," \
 				"      you may need to specify it with equal sign '='." ;;
 		OPT_VAL_NO_EQ)
-			throw "The optional value of option '$FLAG' must be explicitly specified with equal sign '='." \
+			throwhelp "The optional value of option '$FLAG' must be explicitly specified with equal sign '='." \
 				"Error at '$ERR_ARG'" \
 				"Hint: your value '$VALUE' may be a wrongly-typed flag." ;;
 		NON_OPT)
 			if [ "$VALUE" = "help" ]; then
 				print_help 
-				exit
+				finish
 			elif [[ "$VALUE" =~ [0-9]+ ]]; then
 				ID_LIST+=("$VALUE")
 				return
 			else 
-				throw "'$VALUE' is neither a book id, an option, or a keyword like 'help'."
+				throwhelp "'$VALUE' is neither a book id, an option, or a keyword like 'help'."
 			fi;;
 	esac
 	case "$2" in 
 		--help|-h)
-			print_help; exit;;
+			print_help; finish;;
 		--version|-v)
-			echo "$VERSION"; exit;;
+			echo "$VERSION"; finish;;
 		--max-retry|-r) 
 			MAX_RETRY="$VALUE";;
 		--media-server-list|-m)
@@ -233,7 +254,7 @@ parse_args '^--(max-retry|media-server-list|folder-path)|-[rmf]$' '^--(help|vers
 
 # if there is no given book id, shows error
 if [ -z "${ID_LIST[*]}" ]; then 
-	throw "At least one book id should be given. "
+	throwhelp "At least one book id should be given. "
 fi
 # == END OF parse the arguments ==
 
