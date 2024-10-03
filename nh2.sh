@@ -24,7 +24,7 @@ print_help() {
 	echo "                                List of alternative servers, space seperated."
 	echo "                                Used sequentially when retrying."
 	echo '                                (default: "3 7 5")'
-	echo '                                (Hint: "dig i${NUM}.nhentai.net" to test)'
+	echo '                                (Hint: "dig i$''{NUM}.nhentai.net" to test)'
 	echo '  -f, --folder-path=PATH        Specify a directory for image stroage.'
 	echo '                                (default: ~/nh)'
 	echo '  -p, --parallel[=MAX_JOBS]     Max number of download jobs in parallel.'
@@ -58,7 +58,7 @@ update_jobs() {
 	JOBS=("${UPDATED[@]}")
 }
 wait_for_jobs() {
-	while [ -n "$JOBS" ]; do 
+	while [ -n "${JOBS[*]}" ]; do 
 		# echo waiting for "${JOBS[@]}"
 		update_jobs;
 	done;
@@ -73,7 +73,7 @@ parse_args() {
 		echo "  - A regex matches options with optional value (e.g. '^--(retry|parallel)|-[rp]$')"
 		echo "  - A callback command, which takes 4 parameter: "
 		echo "    - status (NO_VAL, WITH_VAL, UNEXPT_VAL, UNEXPT_NO_VAL, UNKNOWN_OPT, NON_OPT, OPT_VAL_NO_EQ)"
-		echo '    - option name: you must implement for names `PARSE_ARGS_NON_OPTION`'
+		echo '    - option name: you must implement for names `''PARSE_ARGS_NON_OPTION`'
 		echo '    - option value: (if given)'
 		echo '    - full error argument'
 		echo '  - Pass all the arugments to parse with "$@"'
@@ -208,7 +208,8 @@ argument_callback() {
 		--max-retry|-r) 
 			MAX_RETRY="$VALUE";;
 		--media-server-list|-m)
-			MEDIA_SERVER_LIST=($VALUE);;
+			# MEDIA_SERVER_LIST=($VALUE);;
+			IFS=" " read -r -a MEDIA_SERVER_LIST <<< "$VALUE" ;;
 		--folder-path|-f)
 			FOLDER_PATH="${VALUE/#\~/$HOME}";;
 				# expand '~' to "$HOME" correctly 
@@ -230,7 +231,7 @@ argument_callback() {
 parse_args '^--(max-retry|media-server-list|folder-path)|-[rmf]$' '^--(help|version)|-[hv]$' '--(parallel)|-[p]' argument_callback "$@"
 
 # if there is no given book id, shows error
-if [ -z "$ID_LIST" ]; then 
+if [ -z "${ID_LIST[*]}" ]; then 
 	throw "At least one book id should be given. "
 fi
 # == END OF parse the arguments ==
@@ -240,7 +241,7 @@ fi
 download_with_auto_retry() {
 	declare FILENAME="$1"
 	declare URL="$2"
-	touch $FILENAME
+	# touch "$FILENAME"
 
 	wget -q -O "$FILENAME" "$URL"
 	declare LAST_WGET_DOWNLOAD_RET=$?
@@ -254,7 +255,8 @@ download_with_auto_retry() {
 		fi 
 		declare ALTER_MEDIA_SERVER_IDX=$(((i - 1) % ${#MEDIA_SERVER_LIST[@]}))
 		declare ALTER_MEDIA_SERVER=${MEDIA_SERVER_LIST[ALTER_MEDIA_SERVER_IDX]}
-		declare ALTER_URL=$(echo "$URL" | sed -E "s/\/\/(i|t)[0-9]*\./\/\/\1${ALTER_MEDIA_SERVER}./")
+		declare ALTER_URL
+		ALTER_URL=$(echo "$URL" | sed -E "s/\/\/(i|t)[0-9]*\./\/\/\1${ALTER_MEDIA_SERVER}./")
 		echo "$FILENAME error. Retrying with media_server=$ALTER_MEDIA_SERVER ($i/$MAX_RETRY)..."
 		wget -q -O "$FILENAME" "$ALTER_URL"
 		LAST_WGET_DOWNLOAD_RET=$?
@@ -279,7 +281,8 @@ for ID in "${ID_LIST[@]}"; do
 
 	# fetch the cover page and save it
 	echo "Parsing book#$ID..."
-	declare COVER_HTML="$(wget -q -O - "https://nhentai.net/g/$ID/")"
+	declare COVER_HTML
+	COVER_HTML="$(wget -q -O - "https://nhentai.net/g/$ID/")"
 	echo "$COVER_HTML" > "$ID/cover_page.html"
 	# extract a list of images that we need to download
 	# make enter after each html tag 
@@ -288,7 +291,8 @@ for ID in "${ID_LIST[@]}"; do
 	# -> convert thumbnail filenames to normal files
 	# -> uniquify the links with awk
 	#    - notice: there may still be multiple urls for book covers
-	declare IMAGE_URLS="$(echo "$COVER_HTML" \
+	declare IMAGE_URLS
+	IMAGE_URLS="$(echo "$COVER_HTML" \
 		| sed -E 's/>/\n/g' \
 		| grep -oEe 'https://t[0-9]+.nhentai\.net/galleries/[0-9]+/[0-9]+t\.[a-zA-Z]+' \
 		| sed -E 's/t(\.[a-zA-Z]{1,10})$/\1/g' | sed -E 's/\/\/t([0-9]+)\./\/\/i\1./' \
@@ -298,7 +302,8 @@ for ID in "${ID_LIST[@]}"; do
 
 	for URL in $IMAGE_URLS; do 
 		# extract filename 
-		declare FILENAME="$ID/$(echo "$URL" | sed -E 's/.*\/([^\/]+)/\1/' )"
+		declare FILENAME
+		FILENAME="$ID/$(echo "$URL" | sed -E 's/.*\/([^\/]+)/\1/' )"
 
 		# check if file exists; if do, skip it
 		if [ -e "$FILENAME" ]; then
