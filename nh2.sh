@@ -82,7 +82,8 @@ finish() {
 			echo "Something went wrong with the script (exit $EXIT_CODE). Check the error above."
 		fi
 	fi
-	exit "$1"; 
+
+	exit "$EXIT_CODE"; 
 }
 
 # a tool for parsing the arguments 
@@ -98,7 +99,7 @@ parse_args() {
 		echo '    - option name: you must implement for names `''PARSE_ARGS_NON_OPTION`'
 		echo '    - option value: (if given)'
 		echo '    - full error argument'
-		echo '  - Pass all the arugments to parse with "$@"'
+		echo '  - Pass all the arugments to parse with "$@". You must check if "$@" is empty in advance.'
 		finish 1
 	fi
 

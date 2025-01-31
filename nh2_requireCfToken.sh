@@ -85,7 +85,8 @@ finish() {
 			echo "Something went wrong with the script (exit $EXIT_CODE). Check the error above."
 		fi
 	fi
-	exit "$1"; 
+
+	exit "$EXIT_CODE"; 
 }
 
 # a tool for parsing the arguments 
@@ -101,7 +102,7 @@ parse_args() {
 		echo '    - option name: you must implement for names `''PARSE_ARGS_NON_OPTION`'
 		echo '    - option value: (if given)'
 		echo '    - full error argument'
-		echo '  - Pass all the arugments to parse with "$@"'
+		echo '  - Pass all the arugments to parse with "$@". You must check if "$@" is empty in advance.'
 		finish 1
 	fi
 
@@ -259,6 +260,12 @@ argument_callback() {
 				"Option '$FLAG', value '$VALUE', ERR_ARG '$ERR_ARG'";;
 	esac
 }
+
+if [ -z "$*" ]; then
+    print_help
+    finish
+fi
+
 parse_args '^--(max-retry|media-server-list|folder-path|cookie|user-agent)|-[rmfca]$' '^--(help|version)|-[hv]$' '^--(parallel)|-[p]$' argument_callback "$@"
 
 # if there is no given book id, shows error
