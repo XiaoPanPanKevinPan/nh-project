@@ -27,8 +27,8 @@ print_help() {
 	echo '                                (Hint: "dig i$''{NUM}.nhentai.net" to test)'
 	echo '  -f, --folder-path=PATH        Specify a directory for image stroage.'
 	echo '                                (default: ~/nh)'
-	echo '  -p, --parallel[=MAX_JOBS]     Max number of download jobs in parallel.'
-	echo '                                (default: 1 if not specified, 20 if presenting)'
+	echo '  -p, --parallel=MAX_JOBS       Max number of download jobs in parallel.'
+	echo '                                (default: 20)'
 	echo '  -h, --help                    Show this message. (You may as well use the '
 	echo '                                keyword help to print out this help messege)'
 	echo '  -v, --version                 Show the version.'
@@ -189,7 +189,7 @@ parse_args() {
 }
 
 # == START OF parse the arguments ==
-declare MAX_JOB_COUNT=1
+declare MAX_JOB_COUNT=20
 declare MAX_RETRY=5
 declare MEDIA_SERVER_LIST=(3 7 5)
 declare ID_LIST=()
@@ -238,20 +238,21 @@ argument_callback() {
 				# expand '~' to "$HOME" correctly 
 				# ref: https://stackoverflow.com/a/27485157
 		--parallel|-p) 
-			case "$STATUS" in 
-				NO_VAL)
-					MAX_JOB_COUNT=20;;
-				WITH_VAL)
-					MAX_JOB_COUNT="$VALUE";;
-				*)
-					throw "Unexpected status. Status '$STATUS', option '$FLAG', value '$VALUE', ERR_ARG '$ERR_ARG'";;
-			esac;;
+			# case "$STATUS" in 
+			# 	NO_VAL)
+			# 		MAX_JOB_COUNT=20;;
+			# 	WITH_VAL)
+			# 		MAX_JOB_COUNT="$VALUE";;
+			# 	*)
+			# 		throw "Unexpected status. Status '$STATUS', option '$FLAG', value '$VALUE', ERR_ARG '$ERR_ARG'";;
+			# esac;;
+            MAX_JOB_COUNT="$VALUE";;
 		*) 
 			throw "Unexpected things happened. This line shouldn't be executed." \
 				"Option '$FLAG', value '$VALUE', ERR_ARG '$ERR_ARG'";;
 	esac
 }
-parse_args '^--(max-retry|media-server-list|folder-path)|-[rmf]$' '^--(help|version)|-[hv]$' '^--(parallel)|-[p]$' argument_callback "$@"
+parse_args '^--(max-retry|media-server-list|folder-path|parallel)|-[rmfp]$' '^--(help|version)|-[hv]$' '^$' argument_callback "$@"
 
 # if there is no given book id, shows error
 if [ -z "${ID_LIST[*]}" ]; then 
